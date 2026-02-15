@@ -1,3 +1,5 @@
-# requirements.txt
-# Standardbibliothek reicht (tkinter, sqlite3).
-# Optional: PlantUML/Graphviz nur zum Rendern des UML-Diagramms.
+# Phase03 Study-Dashboard
+# Python >= 3.10 empfohlen
+
+matplotlib>=3.8,<4.0
+numpy>=1.26,<3.0
