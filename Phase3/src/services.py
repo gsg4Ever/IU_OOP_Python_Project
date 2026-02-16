@@ -1,24 +1,19 @@
 from __future__ import annotations
 
 # -----------------------------------------------------------------------------
-# Service-Schicht (Anwendungsfälle + KPI-Berechnung)
+# Service-Schicht (Use-Cases + KPI-Berechnung)
 # -----------------------------------------------------------------------------
-# Diese Schicht kapselt die fachliche Logik und stellt eine stabile API für die UI bereit.
+# Die UI spricht nur mit dem Service. Der Service nutzt Repositories, und die kapseln SQL.
 #
-# Architektur-Regel (Tutor-Feedback):
-# - UI spricht nur mit Services.
-# - Services orchestrieren Use-Cases und nutzen Repositories.
-# - Repositories kapseln SQL und nutzen `DatabaseProtocol` für den DB-Zugriff.
-#
-# Ausnahme (bewusst): `DashboardService.bootstrap()` fungiert als „Composition Root“
-# für den Prototypen. Dort werden DB-Verbindung/Schema initialisiert und Repositories
-# instanziiert. Die eigentliche Fachlogik (CRUD/KPI) nutzt weiterhin nur Repositories.
+# Hinweis zum Prototyp:
+# `DashboardService.bootstrap()` ist hier der Startpunkt (Composition Root). Dort wird die
+# DB geöffnet und das Schema angelegt, damit die UI kein DB-Wissen braucht.
 # -----------------------------------------------------------------------------
 
 
 """Service-Schicht des Studien-Dashboards (Phase 3).
 
-Zweck:
+Kurz:
     Kapselt die fachliche Logik der Anwendung: Use-Cases (CRUD) und KPI-Berechnung.
     Die UI ruft ausschließlich Methoden dieser Schicht auf.
 
@@ -26,7 +21,7 @@ Architektur:
     - UI → Services → Repositories → Datenbank
     - Repositories kapseln SQL und arbeiten gegen `DatabaseProtocol`.
 
-Hinweise:
+Hinweis:
     `DashboardService.bootstrap()` fungiert im Prototyp als „Composition Root“:
     DB-Verbindung/Schemainit werden dort erstellt, damit die UI keinerlei DB-Wissen benötigt.
 """
@@ -51,10 +46,10 @@ class DashboardKPIs:
     """
     Aggregierte KPIs, die im Dashboard angezeigt werden.
     
-    Zweck:
+    Kurz:
         Bündelt alle Kennzahlen, die die UI in Kopfzeile/Diagrammen darstellt.
     
-    Begriffe (zur Vermeidung von Missverständnissen):
+    Begriffe:
         - ist_studienende: Datum der letzten bestandenen Prüfung (falls vorhanden)
         - soll_studienende: Zieltermin aus Startdatum + Soll-Dauer
         - prognose_studienende: Hochrechnung des Enddatums auf Basis der aktuellen Pace (ECTS-gewichtet)
@@ -90,11 +85,11 @@ class DashboardService:
     """
     Fassade für alle Anwendungsfälle der Anwendung.
     
-    Zweck:
+    Kurz:
         Stellt eine stabile API für die UI bereit. Die GUI kennt nur diese Klasse und
         greift weder direkt auf Repositories noch auf SQL zu.
     
-    Hinweise:
+    Hinweis:
         - `bootstrap()` erzeugt DB + Repositories (Prototyp/Composition Root).
         - CRUD-Methoden delegieren an Repositories.
         - KPI-Methoden berechnen Kennzahlen und liefern Plot-Serien für Matplotlib.
@@ -113,7 +108,7 @@ class DashboardService:
         """
         Initialisiert den Service.
         
-        Zweck:
+        Kurz:
             Speichert Repositories und merkt sich optional, ob die DB vom Service verwaltet wird.
         
         Parameter:
@@ -141,14 +136,14 @@ class DashboardService:
         """
         Erzeugt einen Service für ein bereits existierendes DB-Objekt.
         
-        Zweck:
+        Kurz:
             Erstellt die benötigten Repositories für die gegebene DB-Instanz.
         
         Parameter:
             db (DatabaseProtocol): Geöffnete Datenbank.
             owns_db (bool): Ob der Service die DB später selbst schließen soll.
         
-        Rückgabe:
+        Gibt zurück:
             DashboardService: Fertig konfigurierter Service.
         """
 
@@ -171,7 +166,7 @@ class DashboardService:
         """
         Bootstrapt die Anwendung (DB öffnen + Schema anlegen).
         
-        Zweck:
+        Kurz:
             Erstellt eine DB-Verbindung (optional mit Pfad), legt das Schema an und gibt einen
             einsatzbereiten Service zurück.
         
@@ -179,10 +174,10 @@ class DashboardService:
             db_path (str | None): Optionaler Pfad zur SQLite-Datei.
             reset_db (bool): Wenn True, werden Tabellen vor dem Anlegen gelöscht (Demo/Test).
         
-        Rückgabe:
+        Gibt zurück:
             DashboardService: Fertig konfigurierter Service.
         
-        Hinweise:
+        Hinweis:
             Für Persistenz über Neustarts sollte `reset_db=False` bleiben (Standard im UI).
         """
 
@@ -194,7 +189,7 @@ class DashboardService:
         """
         Schließt die DB-Verbindung (nur wenn der Service sie besitzt).
         
-        Zweck:
+        Kurz:
             Verhindert Resource-Leaks, wenn die GUI beendet wird.
         """
 
@@ -208,11 +203,11 @@ class DashboardService:
         """
         Stellt sicher, dass Demo-Student und -Studiengang existieren.
         
-        Zweck:
+        Kurz:
             Der Prototyp soll ohne zusätzliche Einrichtung laufen. Falls noch keine Daten existieren,
             werden ein Student und ein Studiengang angelegt.
         
-        Rückgabe:
+        Gibt zurück:
             tuple[int, int, Studiengang]: (student_id, studiengang_id, studiengang_model)
         """
 
@@ -257,7 +252,7 @@ class DashboardService:
         """
         Legt ein neues Modul im Modulkatalog an.
         
-        Zweck:
+        Kurz:
             Erstellt ein `Modul`-Objekt und delegiert die Persistenz an das Modul-Repository.
         
         Parameter:
@@ -266,7 +261,7 @@ class DashboardService:
             plan_semester_nr (int): Geplantes Semester.
             default_soll_bestanden_am (date | None): Optionales Standard-Soll-Datum.
         
-        Rückgabe:
+        Gibt zurück:
             int: Primärschlüssel `modul_id`.
         """
 
@@ -283,7 +278,7 @@ class DashboardService:
         """
         Liefert die Modulliste für die Combobox.
         
-        Rückgabe:
+        Gibt zurück:
             list[tuple[int, str]]: Paare aus (modul_id, titel).
         """
 
@@ -294,13 +289,13 @@ class DashboardService:
         """
         Lädt ein Modul anhand seiner ID.
         
-        Zweck:
+        Kurz:
             Wird u. a. beim Laden einer Belegung in das Formular verwendet.
         
         Parameter:
             modul_id (int): Primärschlüssel des Moduls.
         
-        Rückgabe:
+        Gibt zurück:
             Modul | None: Modul oder `None`.
         """
 
@@ -317,7 +312,7 @@ class DashboardService:
             studiengang_id (int): Kontext-Studiengang.
             limit (int): Maximale Anzahl Zeilen.
         
-        Rückgabe:
+        Gibt zurück:
             list[Any]: DB-Rows (inkl. Modultitel/ECTS via Join).
         """
 
@@ -330,7 +325,7 @@ class DashboardService:
         Parameter:
             belegung (ModulBelegung): Neue Belegung.
         
-        Rückgabe:
+        Gibt zurück:
             int: Primärschlüssel `belegung_id`.
         """
 
@@ -344,7 +339,7 @@ class DashboardService:
             studiengang_id (int): Kontext-Studiengang.
             belegung_id (int): Primärschlüssel.
         
-        Rückgabe:
+        Gibt zurück:
             ModulBelegung | None: Belegung oder `None`.
         """
 
@@ -386,7 +381,7 @@ class DashboardService:
         """
         Berechnet zentrale KPIs für einen Studiengang.
         
-        Zweck:
+        Kurz:
             Ermittelt Fortschritt (ECTS), Durchschnittsnote sowie Zeitkennzahlen (Ist/Soll/Prognose).
         
         Parameter:
@@ -396,10 +391,10 @@ class DashboardService:
             soll_studiensemester (int | None): Optionales Ziel in Semestern (zur Ziel-ECTS-Bestimmung).
             ects_pro_semester (int): Annahme für Ziel-ECTS (Default: 30).
         
-        Rückgabe:
+        Gibt zurück:
             DashboardKPIs: Aggregierte Kennzahlen.
         
-        Hinweise:
+        Hinweis:
             Die Prognose basiert auf der aktuellen Pace (verstrichene Zeit relativ zu erreichten ECTS).
             Zusätzlich wird das Datum der letzten bestandenen Prüfung separat ausgewiesen.
         """
@@ -498,13 +493,13 @@ class DashboardService:
         """
         Datenserie für Soll-/Ist-Note je Modul (Plot 1).
         
-        Zweck:
+        Kurz:
             Liefert pro Modul die aktuellste Belegung und extrahiert Soll-/Ist-Noten für eine Balken-/Punktdarstellung.
         
         Parameter:
             studiengang_id (int): Kontext-Studiengang.
         
-        Rückgabe:
+        Gibt zurück:
             list[Any]: Row-Objekte aus `ModulBelegungRepository.plot_latest_per_module()`.
         """
 
@@ -521,13 +516,13 @@ class DashboardService:
         """
         Datenserie für Zeitabweichung je Modul (Plot 2).
         
-        Zweck:
+        Kurz:
             Liefert pro Modul die Abweichung in Tagen (Ist-Datum minus Soll-Datum), sofern beide Datumswerte vorliegen.
         
         Parameter:
             studiengang_id (int): Kontext-Studiengang.
         
-        Rückgabe:
+        Gibt zurück:
             list[Any]: Row-Objekte (inkl. `delta_days`).
         """
 
@@ -543,13 +538,13 @@ class DashboardService:
         """
         Datenserie für kumulative ECTS über die Zeit (Plot 3).
         
-        Zweck:
+        Kurz:
             Liefert Zeitreihendaten aller bestandenen Module, sortiert nach Bestehensdatum.
         
         Parameter:
             studiengang_id (int): Kontext-Studiengang.
         
-        Rückgabe:
+        Gibt zurück:
             list[Any]: Row-Objekte mit Datum/ECTS/Note.
         """
 
@@ -570,14 +565,14 @@ class DashboardService:
         """
         Datenserie für Durchschnittsnote über die Zeit (Plot 4).
         
-        Zweck:
+        Kurz:
             Liefert die gleiche Basis wie ECTS-Zeitreihe und wird in der UI zu einer
             fortlaufenden (ECTS-gewichteten) Durchschnittsnote aggregiert.
         
         Parameter:
             studiengang_id (int): Kontext-Studiengang.
         
-        Rückgabe:
+        Gibt zurück:
             list[Any]: Row-Objekte mit Datum/ECTS/Note.
         """
 

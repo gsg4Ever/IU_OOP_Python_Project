@@ -1,20 +1,17 @@
 from __future__ import annotations
 
 # -----------------------------------------------------------------------------
-# Domain model (Entities)
+# Domänenmodell (Entities)
 # -----------------------------------------------------------------------------
-# Diese Datei enthält die fachlichen Kernobjekte (Entities) des Dashboards.
+# Hier liegen die zentralen Datenklassen (dataclasses). Die Idee ist, die Entities schlank
+# zu halten und nur einfache Checks in `__post_init__` zu machen.
 #
-# Ziel: schlanke, gut testbare Datenklassen (dataclasses).
-# - Invarianten / Wertebereiche werden über __post_init__ als Basisschutz geprüft.
-# - UI-spezifisches Parsing (String → int/float/date) passiert in `validation.py`.
-# - Persistenzdetails (SQL/Row-Objekte) bleiben in den Repositories.
+# Parsing von UI-Strings (z. B. "3" → int, "2025-06-01" → date) passiert in `validation.py`.
+# SQL/Row-Details bleiben in den Repositories.
 #
 # Hinweis zum Semester:
-# Ein eigenes Entity `Semester` wird im Prototypen nicht persistiert.
-# Stattdessen werden Semester-Informationen über `plan_semester_nr` / `ist_semester_nr`
-# direkt an Modul bzw. ModulBelegung geführt. Damit bleibt das Modell schlank, ohne die
-# KPI-Berechnungen zu verlieren.
+# Im Prototyp gibt es kein eigenes Semester-Entity in der DB. Stattdessen laufen Semester-
+# Nummern über `plan_semester_nr` / `ist_semester_nr` direkt am Modul bzw. an der Belegung.
 # -----------------------------------------------------------------------------
 
 
@@ -27,7 +24,7 @@ def _require_non_empty(val: str, field: str) -> None:
     """
     Prüft, ob ein Pflicht-String nicht leer ist.
     
-    Zweck:
+    Kurz:
         Zentrale Hilfsfunktion für `__post_init__`, um wiederkehrende „nicht leer“-Checks
         konsistent umzusetzen.
     
@@ -35,7 +32,7 @@ def _require_non_empty(val: str, field: str) -> None:
         val (str): Zu prüfender Wert.
         field (str): Feldname für die Fehlermeldung.
     
-    Ausnahmen:
+    Fehler:
         ValueError: Wenn `val` leer/whitespace ist.
     """
 
@@ -48,10 +45,10 @@ class Student:
     """
     Repräsentiert den/die Nutzer:in des Dashboards.
     
-    Zweck:
+    Kurz:
         Hält Stammdaten, die einer Person zugeordnet sind (z. B. für Kopfzeile/Identifikation).
         Für die KPI-Berechnung sind diese Daten im Prototypen nicht zwingend erforderlich,
-        werden aber bewusst modelliert (Tutor-Feedback: „Person/Student“ ergänzen).
+        werden aber bewusst mit modelliert.
     
     Attribute:
         vorname (str): Vorname (Pflicht).
@@ -60,7 +57,7 @@ class Student:
         geburtsdatum (date | None): Optionales Geburtsdatum.
         adresse (str | None): Optionale Adresse.
     
-    Hinweise:
+    Hinweis:
         Die Pflichtfelder werden in `__post_init__` auf „nicht leer“ geprüft.
     """
 
@@ -74,7 +71,7 @@ class Student:
         """
         Validiert Pflichtfelder nach der Initialisierung.
         
-        Zweck:
+        Kurz:
             Sicherstellt, dass Vorname/Nachname/Matrikelnummer gesetzt sind.
         """
 
@@ -89,7 +86,7 @@ class Studiengang:
     """
     Fachlicher Rahmen eines Studiums, auf dem KPIs basieren.
     
-    Zweck:
+    Kurz:
         Beschreibt den Studienkontext (Start, Zielsemester, Ziel-Ø-Note). Services verwenden
         diese Angaben, um Soll-/Prognose-Werte (z. B. Studiendauer) abzuleiten.
     
@@ -99,7 +96,7 @@ class Studiengang:
         soll_studiensemester (int | None): Optionales Ziel (z. B. 6 Semester).
         soll_durchschnittsnote (float): Ziel-Durchschnittsnote (1.0..5.0).
     
-    Hinweise:
+    Hinweis:
         Die Soll-Dauer in Jahren wird über die Annahme „2 Semester pro Jahr“ abgeleitet.
     """
 
@@ -112,7 +109,7 @@ class Studiengang:
         """
         Validiert Wertebereiche nach der Initialisierung.
         
-        Zweck:
+        Kurz:
             Prüft Pflichtfelder und einfache Wertebereiche (Soll-Semester, Zielnote).
         """
 
@@ -130,7 +127,7 @@ class Modul:
     """
     Stammdaten eines Moduls (Modulkatalog).
     
-    Zweck:
+    Kurz:
         Enthält die stabilen Modulinformationen (Titel, ECTS, geplantes Semester).
         Diese Daten werden unabhängig von Prüfungsleistungen gepflegt und in Belegungen referenziert.
     
@@ -141,7 +138,7 @@ class Modul:
         plan_semester_nr (int): Geplantes Semester (> 0).
         default_soll_bestanden_am (date | None): Optionaler Vorschlagswert für das Soll-Datum.
     
-    Hinweise:
+    Hinweis:
         Die UI kann `default_soll_bestanden_am` als Vorbelegung nutzen, Belegungen dürfen davon abweichen.
     """
 
@@ -155,7 +152,7 @@ class Modul:
         """
         Validiert Wertebereiche nach der Initialisierung.
         
-        Zweck:
+        Kurz:
             Stellt u. a. sicher, dass ECTS und geplantes Semester > 0 sind.
         """
 
@@ -172,7 +169,7 @@ class ModulBelegung:
     """
     Prüfungs-/Ist-Daten eines Moduls innerhalb eines Studiengangs.
     
-    Zweck:
+    Kurz:
         Modelliert die Belegung als „Assoziationsklasse“ (UML): Sie verknüpft ein Modul
         (Stammdaten) mit einem Studiengang (Kontext) und speichert KPI-relevante Felder
         wie Bestehensdatum, Noten und Versuche.
@@ -189,7 +186,7 @@ class ModulBelegung:
         ist_note (float | None): Tatsächliche Note (optional).
         anzahl_versuche (int): Anzahl Prüfungsversuche (>= 1).
     
-    Hinweise:
+    Hinweis:
         Wertebereiche werden in `__post_init__` validiert (Basisschutz gegen ungültige Zustände).
     """
 
@@ -208,7 +205,7 @@ class ModulBelegung:
         """
         Validiert Referenzen und Wertebereiche nach der Initialisierung.
         
-        Zweck:
+        Kurz:
             Basisschutz gegen ungültige IDs/Notenbereiche/Versuchszahlen.
         """
 

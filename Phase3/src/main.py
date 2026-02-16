@@ -1,11 +1,9 @@
-"""
-Startpunkt der Anwendung (Studien-Dashboard).
+"""Startpunkt der Anwendung.
 
-Zweck:
-    Startet die Tkinter-GUI des Prototyps. Die Oberfläche kapselt alle Interaktionen
-    (CRUD für Modulbelegungen) und ruft dafür ausschließlich die Service-Schicht auf.
+Startet die Tkinter-GUI des Prototyps. Die Oberfläche macht CRUD für Modulbelegungen und
+spricht dafür nur mit der Service-Schicht.
 
-Ausführung:
+Aufruf:
     python -m Phase3.src.main
 """
 

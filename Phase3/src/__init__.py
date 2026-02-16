@@ -1,19 +1,11 @@
-"""
-Phase 3 – Studien-Dashboard (Prototyp).
+"""Phase 3 – Studien-Dashboard (Prototyp).
 
-Zweck:
-    Dieses Paket bündelt den Prototyp-Code der Finalisierungsphase (Phase 3) und
-    dokumentiert die geplante Schichtenarchitektur (UI → Service → Repository → Model).
+In diesem Paket liegt der Code aus der Finalisierungsphase (Phase 3). Die Idee ist eine
+einfache Schichtenaufteilung: UI → Service → Repository → Model. Die UI kümmert sich nur
+um Eingabe/Anzeige, die Services bündeln die Use-Cases und KPI-Berechnungen, und die
+Repositories kapseln die SQLite-Zugriffe.
 
-Inhalt:
-    - UI-Schicht: Benutzereingaben und Darstellung (keine fachliche Logik)
-    - Service-Schicht: Use-Cases, Validierung und KPI-Berechnung
-    - Repository-Schicht: SQL/CRUD auf SQLite
-    - Model-Schicht: Datenklassen (Entities)
-
-Hinweise:
-    Der genaue Paketpfad kann je nach Projektstruktur variieren (z. B. `Phase3/src`).
-    Diese Datei markiert das Verzeichnis als Python-Paket und enthält keine Laufzeitlogik.
+Hinweis: Diese Datei markiert das Verzeichnis als Python-Paket und enthält keine Logik.
 """
 
 __all__ = []

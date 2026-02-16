@@ -1,16 +1,8 @@
-"""
-Datenbank-Interfaces (Protocols) für Repository- und Service-Schicht.
+"""Kleine DB-Interfaces (Protocols) für die Repositories/Services.
 
-Zweck:
-    Entkoppelt die Anwendung von der konkreten Datenbank-Implementierung (hier: SQLite),
-    indem Repositories/Services nur gegen kleine, stabile Interfaces typisieren.
-
-Inhalt:
-    - CursorProtocol: minimales Cursor-Verhalten (fetchone/fetchall/lastrowid)
-    - DatabaseProtocol: minimale DB-API (execute/executemany/executescript + Transaktionen)
-
-Hinweise:
-    Die konkrete Implementierung des Interfaces erfolgt in `db.py` (SQLiteDatabase).
+Damit der Rest der Anwendung nicht direkt an `sqlite3` hängt, tippen Repositories und
+Services nur gegen ein sehr kleines Interface: `DatabaseProtocol` und `CursorProtocol`.
+Die echte SQLite-Implementierung sitzt in `db.py`.
 """
 
 from __future__ import annotations
@@ -22,11 +14,11 @@ class CursorProtocol(Protocol):
     """
     Cursor-Interface, das von Repositories benötigt wird.
     
-    Zweck:
+    Kurz:
         Beschreibt nur die Cursor-Funktionen, die im Projekt tatsächlich verwendet werden
         (z. B. für SELECT-Abfragen und `lastrowid` nach INSERT).
     
-    Hinweise:
+    Hinweis:
         Ein echtes `sqlite3.Cursor` bietet deutlich mehr. Für die Entkopplung genügt hier
         ein „Minimalvertrag“ (Interface/Protocol).
     """
@@ -42,11 +34,11 @@ class DatabaseProtocol(Protocol):
     """
     Minimales Datenbank-Interface für Repositories/Services.
     
-    Zweck:
+    Kurz:
         Vereinheitlicht den Zugriff auf die Persistenz (execute/commit/rollback/close),
         ohne die Anwendung an `sqlite3` zu koppeln.
     
-    Hinweise:
+    Hinweis:
         Repositories erhalten ein Objekt dieses Typs (z. B. `SQLiteDatabase`) und führen
         ausschließlich darüber SQL-Befehle aus.
     """

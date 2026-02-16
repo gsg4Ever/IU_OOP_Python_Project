@@ -1,19 +1,14 @@
 from __future__ import annotations
 
 # -----------------------------------------------------------------------------
-# UI layer (Tkinter + Matplotlib)
+# UI-Schicht (Tkinter + Matplotlib)
 # -----------------------------------------------------------------------------
-# Verantwortlich für:
-# - Eingabe/Änderung/Löschen von ModulBelegungen (CRUD)
-# - Anzeige der zentralen KPIs (Fortschritt, Durchschnittsnote, Studiendauer-Prognose)
-# - Visualisierung als Diagramme
+# Die Oberfläche ist zuständig für Eingabe/Anzeige (CRUD für Modulbelegungen) und die
+# Visualisierung der KPIs. Wichtig: keine direkten SQL/DB-Zugriffe hier, das läuft alles
+# über `DashboardService`.
 #
-# Wichtig (Architekturregel):
-# Die UI greift nicht direkt auf SQL/DB zu, sondern verwendet ausschließlich `DashboardService`.
-#
-# UML-Namensmapping:
-# Im UML-Diagramm wird die UI-Klasse als `DashboardGUI` bezeichnet.
-# In der Implementierung heißt die Klasse `DashboardApp` (funktional identisch).
+# Kleiner Hinweis zum UML:
+# Im Diagramm heißt die UI-Klasse `DashboardGUI`, in Python hier `DashboardApp`.
 # -----------------------------------------------------------------------------
 
 
@@ -42,16 +37,16 @@ class DashboardApp:
     """
     Tkinter-Hauptfenster des Prototyps (UI-Schicht).
     
-    Zweck:
+    Kurz:
         Stellt Eingabemasken, Tabellenansicht und Diagramme bereit, um Modulbelegungen
         zu verwalten (CRUD) und zentrale KPIs zu visualisieren.
     
-    Ablauf:
+    Grob Ablauf:
         1) Service bootstrappen (DB öffnen + Schema sicherstellen)
         2) Demo-Student/Studiengang anlegen (falls noch nicht vorhanden)
         3) Widgets aufbauen, Daten laden und Plots aktualisieren
     
-    Hinweise:
+    Hinweis:
         Architekturregel: Die UI greift nie direkt auf SQL/DB zu, sondern nutzt ausschließlich
         `DashboardService` als Schnittstelle zur Fachlogik.
     """
@@ -60,7 +55,7 @@ class DashboardApp:
         """
         Initialisiert das Hauptfenster und die Service-Anbindung.
         
-        Zweck:
+        Kurz:
             Erstellt den `DashboardService`, lädt/erstellt Demo-Daten und baut anschließend
             die komplette Oberfläche auf.
         
@@ -92,7 +87,7 @@ class DashboardApp:
         """
         Erzeugt und arrangiert alle Widgets der Oberfläche.
         
-        Zweck:
+        Kurz:
             Baut die linke Seite (Formular + Tabelle) sowie die rechte Seite (Diagramme)
             und initialisiert die zugehörigen Tkinter-Variablen.
         """
@@ -254,7 +249,7 @@ class DashboardApp:
         """
         Hilfsfunktion zum Anlegen einer Label+Entry-Zeile.
         
-        Zweck:
+        Kurz:
             Reduziert redundanten UI-Code beim Aufbau des Formulars.
         
         Parameter:
@@ -274,7 +269,7 @@ class DashboardApp:
         """
         Aktualisiert die Modulauswahl der Combobox.
         
-        Zweck:
+        Kurz:
             Lädt alle Module aus dem Service und baut das interne Mapping
             `titel -> modul_id` für spätere Aktionen auf.
         """
@@ -290,7 +285,7 @@ class DashboardApp:
         """
         Öffnet einen Dialog zum Anlegen eines neuen Moduls.
         
-        Zweck:
+        Kurz:
             Erfasst Modul-Stammdaten (Titel/ECTS/Plansemester/optional Soll-Datum) und speichert
             diese über den Service. Danach wird die Modulliste der UI aktualisiert.
         """
@@ -347,14 +342,14 @@ class DashboardApp:
         """
         Erzeugt ein `Studiengang`-Objekt aus den Formularfeldern.
         
-        Zweck:
+        Kurz:
             Liest Eingaben (Name/Start/Soll-Semester/Ziel-Ø-Note) aus und gibt ein neues
             `Studiengang`-Objekt zurück.
         
-        Rückgabe:
+        Gibt zurück:
             Studiengang: Studiengang basierend auf den UI-Feldern.
         
-        Ausnahmen:
+        Fehler:
             ValidationError: Bei ungültigen Eingaben (z. B. Datum/Numbers).
         """
 
@@ -368,7 +363,7 @@ class DashboardApp:
         """
         Speichert Studiengang-Änderungen aus der UI.
         
-        Zweck:
+        Kurz:
             Validiert die Eingaben, persistiert sie über den Service und aktualisiert anschließend
             KPIs und Diagramme.
         """
@@ -389,7 +384,7 @@ class DashboardApp:
         """
         Aktualisiert die KPI-Kopfzeile im UI.
         
-        Zweck:
+        Kurz:
             Ruft `compute_kpis()` im Service auf und formatiert die Kennzahlen als Textblock
             für das Label im oberen Bereich.
         """
@@ -433,7 +428,7 @@ class DashboardApp:
         """
         Leert eine Matplotlib-Achse und zeigt eine Statusmeldung.
         
-        Zweck:
+        Kurz:
             Wird genutzt, um „keine Daten“ oder Fehlermeldungen lesbar im Plotbereich darzustellen.
         
         Parameter:
@@ -450,7 +445,7 @@ class DashboardApp:
         """
         Aktualisiert Plots mit Fehlerbehandlung.
         
-        Zweck:
+        Kurz:
             Verhindert, dass Plot-Fehler die GUI „abschießen“. Stattdessen wird eine
             verständliche Meldung in den Achsen dargestellt.
         """
@@ -465,14 +460,14 @@ class DashboardApp:
         """
         Erzeugt/aktualisiert alle Diagramme.
         
-        Zweck:
+        Kurz:
             Holt Datenserien über den Service und zeichnet:
             - Soll/Ist-Noten pro Modul
             - Zeitabweichung (Tage) pro Modul
             - ECTS-Fortschritt über Zeit
             - Durchschnittsnote über Zeit
         
-        Hinweise:
+        Hinweis:
             Die Plots werden bewusst in der UI erzeugt (Darstellung), die Daten kommen aus dem Service.
         """
 
@@ -562,10 +557,10 @@ class DashboardApp:
         """
         Ermittelt die ausgewählte `modul_id` aus der Combobox.
         
-        Rückgabe:
+        Gibt zurück:
             int: Modul-ID der aktuellen Auswahl.
         
-        Ausnahmen:
+        Fehler:
             ValidationError: Wenn kein Modul ausgewählt wurde oder die Zuordnung fehlt.
         """
 
@@ -578,14 +573,14 @@ class DashboardApp:
         """
         Erzeugt eine `ModulBelegung` aus den Formularfeldern.
         
-        Zweck:
+        Kurz:
             Parst/validiert die Eingaben (Semester, Datum, Noten, Versuche) und erstellt das
             Domänenobjekt, das anschließend über den Service gespeichert wird.
         
-        Rückgabe:
+        Gibt zurück:
             ModulBelegung: Belegung basierend auf den UI-Feldern.
         
-        Ausnahmen:
+        Fehler:
             ValidationError: Bei ungültigen Eingaben.
         """
 
@@ -612,7 +607,7 @@ class DashboardApp:
         """
         Lädt Tabelle/KPIs neu und aktualisiert die Diagramme.
         
-        Zweck:
+        Kurz:
             Zentraler Refresh nach CRUD-Operationen oder beim Start.
         """
 
@@ -663,7 +658,7 @@ class DashboardApp:
         """
         Event-Handler: Belegung in Formular laden (CRUD: Read).
         
-        Zweck:
+        Kurz:
             Lädt anhand der Belegung-ID den Datensatz und füllt die Eingabefelder, damit
             danach Update/Delete möglich sind.
         """
@@ -718,7 +713,7 @@ class DashboardApp:
         """
         Event-Handler: Tabellenzeile ausgewählt.
         
-        Zweck:
+        Kurz:
             Übernimmt die ausgewählte Belegung-ID in das Eingabefeld, um Load/Update/Delete
             zu erleichtern.
         """
@@ -734,7 +729,7 @@ class DashboardApp:
         """
         Schließt die Anwendung kontrolliert.
         
-        Zweck:
+        Kurz:
             Schließt Service/DB (falls nötig) und beendet das Tkinter-Fenster.
         """
 
@@ -748,7 +743,7 @@ def run() -> None:
     """
     Startet die Tkinter-GUI (Hilfsfunktion für main.py).
     
-    Zweck:
+    Kurz:
         Erstellt das Root-Fenster, instanziiert `DashboardApp` und startet die Tkinter-Eventloop.
     """
 

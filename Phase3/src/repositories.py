@@ -1,14 +1,10 @@
 from __future__ import annotations
 
 # -----------------------------------------------------------------------------
-# Repository layer (Persistence)
+# Repository-Schicht (SQLite/Persistenz)
 # -----------------------------------------------------------------------------
-# Repositories kapseln *sämtliche* SQL-Zugriffe und stellen CRUD-Operationen bereit.
-# Sie enthalten bewusst keine GUI-Logik und nur minimale fachliche Logik.
-#
-# Abhängigkeiten:
-# - Repositories kennen nur `DatabaseProtocol` (ein kleines Interface/Protocol).
-# - Services orchestrieren Anwendungsfälle und verwenden Repositories.
+# In den Repositories steckt der komplette SQL-Zugriff (CRUD + ein paar Abfragen für KPIs).
+# Die UI sieht davon nichts, sie spricht nur mit dem Service.
 # -----------------------------------------------------------------------------
 
 
@@ -23,14 +19,14 @@ def _iso(d: Optional[date]) -> Optional[str]:
     """
     Konvertiert ein Datum in das ISO-Format für die Datenbank.
     
-    Zweck:
+    Kurz:
         Repositories speichern Datumswerte als TEXT im Format `YYYY-MM-DD`. Diese Hilfsfunktion
         übernimmt die Serialisierung und behandelt `None` sauber.
     
     Parameter:
         d (date | None): Datum oder `None`.
     
-    Rückgabe:
+    Gibt zurück:
         str | None: ISO-String oder `None`.
     """
 
@@ -41,10 +37,10 @@ class StudentRepository:
     """
     Repository für `Student` (Persistenzzugriff).
     
-    Zweck:
+    Kurz:
         Kapselt SQL-Zugriffe auf die Tabelle `student` und stellt eine einfache Upsert-Operation bereit.
     
-    Hinweise:
+    Hinweis:
         Im Prototypen wird `matrikelnummer` als natürlicher Schlüssel verwendet.
         `upsert()` nutzt `ON CONFLICT` und liefert die `student_id` zurück.
     """
@@ -63,17 +59,17 @@ class StudentRepository:
         """
         Legt einen Student an oder aktualisiert ihn (Upsert).
         
-        Zweck:
+        Kurz:
             Schreibt Stammdaten in die DB. Existiert die Matrikelnummer bereits, wird der Datensatz
             aktualisiert (SQLite: `ON CONFLICT ... DO UPDATE`).
         
         Parameter:
             student (Student): Zu speicherndes Student-Objekt.
         
-        Rückgabe:
+        Gibt zurück:
             int: Primärschlüssel `student_id` des gespeicherten Datensatzes.
         
-        Ausnahmen:
+        Fehler:
             RuntimeError: Wenn nach dem Upsert kein Datensatz gefunden werden kann (sollte nicht passieren).
         """
 
@@ -116,10 +112,10 @@ class StudiengangRepository:
     """
     Repository für `Studiengang` (Persistenzzugriff).
     
-    Zweck:
+    Kurz:
         Kapselt SQL-Zugriffe auf die Tabelle `studiengang` (Anlegen, Laden, Aktualisieren).
     
-    Hinweise:
+    Hinweis:
         Ein Student kann theoretisch mehrere Studiengänge besitzen.
         Für den Prototypen wird häufig der „aktuellste“ Studiengang verwendet
         (`ORDER BY studiengang_id DESC`).
@@ -143,7 +139,7 @@ class StudiengangRepository:
             student_id (int): Referenz auf `student`.
             sg (Studiengang): Studiengang-Daten.
         
-        Rückgabe:
+        Gibt zurück:
             int: Primärschlüssel `studiengang_id`.
         """
 
@@ -176,13 +172,13 @@ class StudiengangRepository:
         """
         Lädt den zuletzt angelegten Studiengang eines Students.
         
-        Zweck:
+        Kurz:
             Für den Prototypen wird meist nur mit dem aktuellsten Studiengang gearbeitet.
         
         Parameter:
             student_id (int): Primärschlüssel des Students.
         
-        Rückgabe:
+        Gibt zurück:
             tuple[int, Studiengang] | None: (studiengang_id, Studiengang) oder `None` falls nicht vorhanden.
         """
 
@@ -216,7 +212,7 @@ class StudiengangRepository:
             studiengang_id (int): Primärschlüssel des zu aktualisierenden Studiengangs.
             sg (Studiengang): Neue Werte.
         
-        Hinweise:
+        Hinweis:
             Es wird ein UPDATE ausgeführt; danach wird committet.
         """
 
@@ -244,11 +240,11 @@ class ModulRepository:
     """
     Repository für `Modul` (Modulkatalog).
     
-    Zweck:
+    Kurz:
         Kapselt SQL-Zugriffe auf die Tabelle `modul` und bietet CRUD/Lookup-Operationen
         für die Modulauswahl in der GUI.
     
-    Hinweise:
+    Hinweis:
         Die UI zeigt Module typischerweise in stabiler Reihenfolge (nach `modul_id`).
     """
 
@@ -269,7 +265,7 @@ class ModulRepository:
         Parameter:
             m (Modul): Modul-Stammdaten.
         
-        Rückgabe:
+        Gibt zurück:
             int: Primärschlüssel `modul_id`.
         """
 
@@ -315,7 +311,7 @@ class ModulRepository:
         Parameter:
             modul_id (int): Primärschlüssel des Moduls.
         
-        Rückgabe:
+        Gibt zurück:
             Modul | None: Modul-Objekt oder `None`, wenn nicht gefunden.
         """
 
@@ -338,7 +334,7 @@ class ModulRepository:
         Parameter:
             titel (str): Eindeutiger Modultitel.
         
-        Rückgabe:
+        Gibt zurück:
             Modul | None: Modul-Objekt oder `None`.
         """
 
@@ -360,7 +356,7 @@ class ModulRepository:
         """
         Listet alle Module (für UI-Auswahl).
         
-        Rückgabe:
+        Gibt zurück:
             list[Any]: Liste von Row-Objekten (sqlite3.Row) in stabiler Reihenfolge.
         """
 
@@ -371,10 +367,10 @@ class ModulRepository:
         """
         Summiert alle ECTS aus der Modultabelle.
         
-        Zweck:
+        Kurz:
             Wird als Fallback genutzt, wenn kein Soll-Semester-Ziel für die Ziel-ECTS bekannt ist.
         
-        Rückgabe:
+        Gibt zurück:
             float: Summe der ECTS (0.0 wenn keine Module angelegt sind).
         """
 
@@ -387,12 +383,12 @@ class ModulBelegungRepository:
     """
     Repository für `ModulBelegung` (Prüfungs-/Ist-Daten).
     
-    Zweck:
+    Kurz:
         Kapselt SQL-Zugriffe auf die Tabelle `modul_belegung` (CRUD).
         Zusätzlich stellt es gezielte Query-Methoden für KPI-Berechnung und Diagramme bereit
         (z. B. ECTS-Summen, gewichtete Durchschnittsnote, Zeitreihen).
     
-    Hinweise:
+    Hinweis:
         Die meisten Methoden arbeiten studiengangbezogen, damit Daten sauber getrennt bleiben.
     """
 
@@ -413,7 +409,7 @@ class ModulBelegungRepository:
         Parameter:
             b (ModulBelegung): Belegungsdaten.
         
-        Rückgabe:
+        Gibt zurück:
             int: Primärschlüssel `belegung_id` der neu angelegten Belegung.
         """
 
@@ -455,7 +451,7 @@ class ModulBelegungRepository:
             studiengang_id (int): Kontext-Studiengang.
             belegung_id (int): Primärschlüssel der Belegung.
         
-        Rückgabe:
+        Gibt zurück:
             ModulBelegung | None: Belegung oder `None`.
         """
 
@@ -486,7 +482,7 @@ class ModulBelegungRepository:
         Parameter:
             b (ModulBelegung): Belegung mit gesetzter `belegung_id`.
         
-        Ausnahmen:
+        Fehler:
             ValueError: Wenn `belegung_id` nicht gesetzt ist.
         """
 
@@ -543,7 +539,7 @@ class ModulBelegungRepository:
             studiengang_id (int): Kontext-Studiengang.
             limit (int): Maximale Anzahl zurückgegebener Zeilen.
         
-        Rückgabe:
+        Gibt zurück:
             list[Any]: Row-Objekte mit Joins auf Modultitel/ECTS.
         """
 
@@ -575,13 +571,13 @@ class ModulBelegungRepository:
         """
         Summiert die ECTS aller bestandenen Module.
         
-        Zweck:
+        Kurz:
             Zählt ECTS nur dann, wenn `ist_bestanden_am` gesetzt ist.
         
         Parameter:
             studiengang_id (int): Kontext-Studiengang.
         
-        Rückgabe:
+        Gibt zurück:
             float: Summe bestandener ECTS.
         """
 
@@ -602,14 +598,14 @@ class ModulBelegungRepository:
         """
         Berechnet die ECTS-gewichtete Durchschnittsnote.
         
-        Zweck:
+        Kurz:
             Mittelt alle vorhandenen `ist_note`-Werte über ECTS-Gewichtung:
             Summe(ECTS * Note) / Summe(ECTS).
         
         Parameter:
             studiengang_id (int): Kontext-Studiengang.
         
-        Rückgabe:
+        Gibt zurück:
             float | None: Gewichtete Durchschnittsnote oder `None`, wenn keine Noten vorliegen.
         """
 
@@ -637,7 +633,7 @@ class ModulBelegungRepository:
         Parameter:
             studiengang_id (int): Kontext-Studiengang.
         
-        Rückgabe:
+        Gibt zurück:
             date | None: Maximales `ist_bestanden_am` oder `None`.
         """
 
@@ -660,7 +656,7 @@ class ModulBelegungRepository:
         """
         Liefert den jeweils neuesten Datensatz je Modul (für Diagramme).
         
-        Zweck:
+        Kurz:
             Für jedes Modul wird die letzte Belegung (höchste `belegung_id`) ermittelt und
             um Stammdaten (Titel/ECTS) ergänzt. Damit können Soll-/Ist-Noten sowie Zeitabweichungen
             pro Modul geplottet werden.
@@ -668,11 +664,11 @@ class ModulBelegungRepository:
         Parameter:
             studiengang_id (int): Kontext-Studiengang.
         
-        Rückgabe:
+        Gibt zurück:
             list[Any]: Row-Objekte (sqlite3.Row) mit Feldern wie `titel`, `soll_note`, `ist_note`,
             `soll_bestanden_am`, `ist_bestanden_am` und `delta_days`.
         
-        Hinweise:
+        Hinweis:
             Implementierung ist SQLite-kompatibel (ohne Window Functions).
         """
 
@@ -711,14 +707,14 @@ class ModulBelegungRepository:
         """
         Liefert Zeitreihendaten für ECTS-/Noten-Verlauf.
         
-        Zweck:
+        Kurz:
             Stellt Datensätze bereit, die nach Bestehensdatum sortiert sind und sich für
             kumulative ECTS sowie Durchschnittsnote über die Zeit eignen.
         
         Parameter:
             studiengang_id (int): Kontext-Studiengang.
         
-        Rückgabe:
+        Gibt zurück:
             list[Any]: Row-Objekte mit `ist_bestanden_am`, `ects` und `ist_note`.
         """
 

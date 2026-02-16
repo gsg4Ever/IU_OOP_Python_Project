@@ -1,33 +1,23 @@
 from __future__ import annotations
 
 # -----------------------------------------------------------------------------
-# Infrastructure: SQLite DB
+# SQLite-DB (Adapter um sqlite3)
 # -----------------------------------------------------------------------------
-# Enthält:
-# - SQLiteDatabase: dünner Adapter um sqlite3.Connection (für DatabaseProtocol)
-# - connect(): öffnet DB (Default-Pfad: Phase3/docs/database/database.db)
-# - create_schema(): legt Tabellen/Indizes an (optional reset_db für Demo/Test)
+# Hier steckt alles drin, was direkt mit der SQLite-Datei zu tun hat:
+# - SQLiteDatabase als dünne Hülle um sqlite3.Connection
+# - connect() öffnet die DB (Standardpfad: Phase3/docs/database/database.db)
+# - create_schema() legt Tabellen/Indizes an (optional: reset_db für Demo/Test)
 #
-# Hinweis zur Entkopplung (Tutor-Feedback Phase 2):
-# Repositories typisieren gegen `DatabaseProtocol` (typing.Protocol), nicht gegen sqlite3.
+# Wichtig: Repositories arbeiten nur gegen das kleine `DatabaseProtocol`, damit der
+# restliche Code nicht direkt an sqlite3 gekoppelt ist.
 # -----------------------------------------------------------------------------
 
 
 """SQLite-Infrastruktur (Phase 3).
 
-Zweck:
-    Stellt die konkrete SQLite-Implementierung bereit, die von der Anwendung genutzt wird.
-    Repositories und Services typisieren dabei gegen `DatabaseProtocol` (siehe `db_protocol.py`).
-
-Inhalt:
-    - SQLiteDatabase: Adapter um `sqlite3.Connection` passend zu `DatabaseProtocol`
-    - connect(): Öffnet die Datenbank (Default-Pfad unter `Phase3/docs/database`)
-    - create_schema(): Legt Tabellen/Indizes an (optional: Reset für Demo/Test)
-
-Hinweise:
-    `DatabaseProtocol` wird aus Kompatibilitätsgründen re-exportiert, damit bestehende
-    Imports weiterhin funktionieren. Die eigentliche Protocol-Definition liegt in
-    `db_protocol.py`.
+Hier ist die konkrete SQLite-Anbindung: Verbindung öffnen, Schema anlegen und ein kleiner
+Adapter (`SQLiteDatabase`), der genau die DB-Methoden bereitstellt, die im Projekt gebraucht
+werden. Repositories/Services sehen davon nur das `DatabaseProtocol`.
 """
 
 import os
@@ -49,11 +39,11 @@ class SQLiteDatabase:
     """
     SQLite-Adapter passend zu `DatabaseProtocol`.
     
-    Zweck:
+    Kurz:
         Kapselt eine `sqlite3.Connection` und bietet nur die Methoden an, die in
         Repository-/Service-Schicht benötigt werden.
     
-    Hinweise:
+    Hinweis:
         Der Adapter erleichtert das Testen (Mocking über das Protocol) und reduziert
         direkte Abhängigkeiten von `sqlite3`.
     """
@@ -62,7 +52,7 @@ class SQLiteDatabase:
         """
         Initialisiert den Datenbank-Adapter.
         
-        Zweck:
+        Kurz:
             Speichert die übergebene `sqlite3.Connection` als interne Implementierungsdetails.
         
         Parameter:
@@ -76,14 +66,14 @@ class SQLiteDatabase:
         """
         Führt ein einzelnes SQL-Statement aus.
         
-        Zweck:
+        Kurz:
             Dient als zentrale Ausführungsfunktion für Repositories (SELECT/INSERT/UPDATE/DELETE).
         
         Parameter:
             sql (str): SQL-Statement (ggf. mit Platzhaltern `?`).
             params (Sequence[Any]): Parameterwerte für die Platzhalter.
         
-        Rückgabe:
+        Gibt zurück:
             Any: Cursor-ähnliches Objekt (bei sqlite3: `sqlite3.Cursor`).
         """
 
@@ -93,14 +83,14 @@ class SQLiteDatabase:
         """
         Führt ein SQL-Statement für viele Parameter-Sätze aus.
         
-        Zweck:
+        Kurz:
             Effiziente Bulk-Operation, z. B. mehrere INSERTs in einem Schritt.
         
         Parameter:
             sql (str): SQL-Statement.
             seq_of_params (Iterable[Sequence[Any]]): Iterable von Parameter-Tupeln.
         
-        Rückgabe:
+        Gibt zurück:
             Any: Cursor-ähnliches Objekt.
         """
 
@@ -111,7 +101,7 @@ class SQLiteDatabase:
         """
         Führt ein SQL-Skript (mehrere Statements) aus.
         
-        Zweck:
+        Kurz:
             Wird typischerweise zum Anlegen/Zurücksetzen des Schemas genutzt.
         
         Parameter:
@@ -138,7 +128,7 @@ class SQLiteDatabase:
         """
         Schließt die Datenbankverbindung.
         
-        Hinweise:
+        Hinweis:
             Im Prototyp übernimmt die Service-Schicht (`DashboardService.close`) das kontrollierte Schließen.
         """
 
@@ -150,10 +140,10 @@ class SQLiteDatabase:
         """
         Gibt die rohe `sqlite3.Connection` zurück.
         
-        Zweck:
+        Kurz:
             Ermöglicht Low-Level-Debugging, ohne das Protocol-Design in den Repositories zu durchbrechen.
         
-        Rückgabe:
+        Gibt zurück:
             sqlite3.Connection: Interne Datenbankverbindung.
         """
 
@@ -164,14 +154,14 @@ def _default_db_path() -> Path:
     """
     Ermittelt den Standardpfad der SQLite-Datenbank.
     
-    Zweck:
+    Kurz:
         Legt die Datenbank standardmäßig unterhalb des Phase3-Projektordners an:
         `Phase3/docs/database/database.db`.
     
-    Rückgabe:
+    Gibt zurück:
         Path: Vollständiger Pfad zur Datenbankdatei.
     
-    Hinweise:
+    Hinweis:
         Das Zielverzeichnis wird bei Bedarf automatisch erstellt.
     """
 
@@ -186,14 +176,14 @@ def connect(db_path: Optional[str | os.PathLike[str]] = None) -> SQLiteDatabase:
     """
     Öffnet eine SQLite-Verbindung und gibt einen `SQLiteDatabase`-Adapter zurück.
     
-    Zweck:
+    Kurz:
         Erstellt eine Verbindung zur Datenbankdatei, aktiviert Foreign Keys und setzt
         `row_factory` auf `sqlite3.Row`, damit Repositories spaltenbasiert zugreifen können.
     
     Parameter:
         db_path (str | PathLike | None): Optionaler Pfad zur Datenbankdatei.
     
-    Rückgabe:
+    Gibt zurück:
         SQLiteDatabase: Adapter-Objekt, das `DatabaseProtocol` erfüllt.
     """
 
@@ -208,7 +198,7 @@ def create_schema(db: DatabaseProtocol, reset_db: bool = False) -> None:
     """
     Legt das Datenbankschema (Tabellen/Indizes) an.
     
-    Zweck:
+    Kurz:
         Erstellt die Tabellen `student`, `studiengang`, `modul` und `modul_belegung`
         inklusive Indizes. Optional kann das Schema für einen reproduzierbaren Demo-Lauf
         vorher zurückgesetzt werden.
@@ -217,7 +207,7 @@ def create_schema(db: DatabaseProtocol, reset_db: bool = False) -> None:
         db (DatabaseProtocol): Datenbank-Adapter.
         reset_db (bool): Wenn True, werden bestehende Tabellen vorher gelöscht.
     
-    Hinweise:
+    Hinweis:
         Für echte Persistenz sollte `reset_db=False` bleiben (Standard im UI).
     """
 
