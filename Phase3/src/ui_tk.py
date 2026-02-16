@@ -199,7 +199,7 @@ class DashboardApp:
         # ID; Modul; ECTS; Plan-Sem.; Ist-Sem.; Plan-Datum; Ist-Datum; Soll-Note; Ist-Note; Versuch
         for col, title, width, anchor, stretch in [
             ("belegung_id", "ID", 45, "w", False),
-            ("modul", "Modul", 220, "w", True),
+            ("modul", "Modul", 220, "w", False),
             ("ects", "ECTS", 45, "center", False),
             ("plan_sem", "Plan-Sem.", 65, "center", False),
             ("ist_sem", "Ist-Sem.", 65, "center", False),
@@ -212,6 +212,10 @@ class DashboardApp:
             self.table.heading(col, text=title)
             self.table.column(col, width=width, anchor=anchor, stretch=stretch)
 
+        # Hinweis: Keine Spalte streckt automatisch, damit manuelle Breitenanpassungen
+        # (z. B. Modul-Spalte) nicht durch Layout-Updates zurückgesetzt werden.
+
+        # Keine "stretch"-Spalte: so bleiben manuelle Spaltenbreiten stabil.
         vsb = ttk.Scrollbar(table_frame, orient="vertical", command=self.table.yview)
         hsb = ttk.Scrollbar(table_frame, orient="horizontal", command=self.table.xview)
         self.table.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
