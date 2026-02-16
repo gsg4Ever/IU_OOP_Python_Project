@@ -492,21 +492,24 @@ class DashboardService:
     def get_series_ist_soll_note_pro_modul(self, studiengang_id: int) -> list[tuple[str, float | None, float | None]]:
         """
         Datenserie für Soll-/Ist-Note je Modul (Plot 1).
-        
+
         Kurz:
-            Liefert pro Modul die aktuellste Belegung und extrahiert Soll-/Ist-Noten für eine Balken-/Punktdarstellung.
-        
+            Nimmt pro Modul die aktuellste Belegung und macht daraus eine kompakte Liste
+            für die Darstellung „Ist vs. Soll“.
+            Als X-Label wird bewusst nur `<modul_id>` verwendet, damit es bei vielen
+            Modulen nicht komplett unlesbar wird.
+
         Parameter:
             studiengang_id (int): Kontext-Studiengang.
-        
+
         Gibt zurück:
-            list[Any]: Row-Objekte aus `ModulBelegungRepository.plot_latest_per_module()`.
+            list[tuple[str, float | None, float | None]]: Liste aus (label, ist_note, soll_note).
         """
 
         rows = self.belegung_repo.plot_latest_per_module(studiengang_id)
         out: list[tuple[str, float | None, float | None]] = []
         for r in rows:
-            label = f"#{r['modul_id']} {r['titel']}"
+            label = str(r["modul_id"])
             ist = float(r["ist_note"]) if r["ist_note"] is not None else None
             soll = float(r["soll_note"]) if r["soll_note"] is not None else None
             out.append((label, ist, soll))
@@ -515,15 +518,17 @@ class DashboardService:
     def get_series_zeitabweichung_pro_modul(self, studiengang_id: int) -> list[tuple[str, int]]:
         """
         Datenserie für Zeitabweichung je Modul (Plot 2).
-        
+
         Kurz:
-            Liefert pro Modul die Abweichung in Tagen (Ist-Datum minus Soll-Datum), sofern beide Datumswerte vorliegen.
-        
+            Liefert pro Modul die Abweichung in Tagen (Ist-Datum minus Soll-/Plan-Datum),
+            aber nur dann, wenn beide Datumswerte vorhanden sind.
+            Das Label ist wieder `<modul_id>`.
+
         Parameter:
             studiengang_id (int): Kontext-Studiengang.
-        
+
         Gibt zurück:
-            list[Any]: Row-Objekte (inkl. `delta_days`).
+            list[tuple[str, int]]: Liste aus (label, delta_tage).
         """
 
         rows = self.belegung_repo.plot_latest_per_module(studiengang_id)
@@ -531,21 +536,21 @@ class DashboardService:
         for r in rows:
             if r["delta_days"] is None:
                 continue
-            out.append((str(r["titel"]), int(r["delta_days"])))
+            out.append((str(r["modul_id"]), int(r["delta_days"])))
         return out
 
     def get_series_ects_fortschritt_ueber_zeit(self, studiengang_id: int) -> list[tuple[date, float]]:
         """
         Datenserie für kumulative ECTS über die Zeit (Plot 3).
-        
+
         Kurz:
-            Liefert Zeitreihendaten aller bestandenen Module, sortiert nach Bestehensdatum.
-        
+            Aggregiert bestandene Module pro Tag und baut daraus eine kumulierte ECTS-Kurve.
+
         Parameter:
             studiengang_id (int): Kontext-Studiengang.
-        
+
         Gibt zurück:
-            list[Any]: Row-Objekte mit Datum/ECTS/Note.
+            list[tuple[date, float]]: Zeitreihe (datum, kumulierte_ects).
         """
 
         rows = self.belegung_repo.plot_completions(studiengang_id)
@@ -564,16 +569,16 @@ class DashboardService:
     def get_series_durchschnittsnote_ueber_zeit(self, studiengang_id: int) -> list[tuple[date, float]]:
         """
         Datenserie für Durchschnittsnote über die Zeit (Plot 4).
-        
+
         Kurz:
-            Liefert die gleiche Basis wie ECTS-Zeitreihe und wird in der UI zu einer
-            fortlaufenden (ECTS-gewichteten) Durchschnittsnote aggregiert.
-        
+            Nutzt die gleichen Bestehens-Events wie die ECTS-Zeitreihe und berechnet daraus
+            eine fortlaufende ECTS-gewichtete Durchschnittsnote.
+
         Parameter:
             studiengang_id (int): Kontext-Studiengang.
-        
+
         Gibt zurück:
-            list[Any]: Row-Objekte mit Datum/ECTS/Note.
+            list[tuple[date, float]]: Zeitreihe (datum, durchschnittsnote_bis_datum).
         """
 
         rows = self.belegung_repo.plot_completions(studiengang_id)

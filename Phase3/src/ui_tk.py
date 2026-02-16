@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from datetime import date
 from tkinter import Tk, ttk, StringVar, messagebox, Toplevel
+import tkinter.font as tkfont
 
 import matplotlib
 matplotlib.use("TkAgg")
@@ -36,19 +37,21 @@ from Phase3.src.validation import (
 class DashboardApp:
     """
     Tkinter-Hauptfenster des Prototyps (UI-Schicht).
-    
+
     Kurz:
         Stellt Eingabemasken, Tabellenansicht und Diagramme bereit, um Modulbelegungen
         zu verwalten (CRUD) und zentrale KPIs zu visualisieren.
-    
+
     Grob Ablauf:
         1) Service bootstrappen (DB öffnen + Schema sicherstellen)
         2) Demo-Student/Studiengang anlegen (falls noch nicht vorhanden)
         3) Widgets aufbauen, Daten laden und Plots aktualisieren
-    
-    Hinweis:
-        Architekturregel: Die UI greift nie direkt auf SQL/DB zu, sondern nutzt ausschließlich
-        `DashboardService` als Schnittstelle zur Fachlogik.
+
+    Hinweise:
+        - Architekturregel: Die UI greift nie direkt auf SQL/DB zu, sondern nutzt ausschließlich
+          `DashboardService` als Schnittstelle zur Fachlogik.
+        - In den „pro Modul“-Plots werden als X-Labels nur die Modul-IDs (`#<id>`) angezeigt,
+          damit die Diagramme auch bei vielen Einträgen noch lesbar bleiben.
     """
 
     def __init__(self, root: Tk) -> None:
@@ -112,6 +115,13 @@ class DashboardApp:
         paned.add(left, weight=3)
         paned.add(right, weight=2)
 
+        # Standard-Sash so setzen, dass die Diagramme etwas mehr Breite bekommen
+        try:
+            self.root.update_idletasks()
+            paned.sashpos(0, int(w * 0.56))
+        except Exception:
+            pass
+
         left.columnconfigure(1, weight=1)
 
         self.kpi_var = StringVar(value="")
@@ -171,28 +181,45 @@ class DashboardApp:
         ttk.Button(btns, text="Close", command=self.on_close).grid(row=0, column=5)
         row += 1
 
+        # Tabelle (Treeview) + Scrollbars in eigenem Frame (stabile Breite, weniger „Springen“)
+        table_frame = ttk.Frame(left)
+        table_frame.grid(row=row, column=0, columnspan=3, sticky="nsew")
+        left.rowconfigure(row, weight=1)
+        table_frame.rowconfigure(0, weight=1)
+        table_frame.columnconfigure(0, weight=1)
+
         self.table = ttk.Treeview(
-            left,
-            columns=("belegung_id", "modul", "ects", "plan", "ist", "ist_datum", "ist_note", "soll_note", "versuche"),
+            table_frame,
+            columns=("belegung_id", "modul", "ects", "plan_sem", "ist_sem", "soll_datum", "ist_datum", "soll_note", "ist_note", "versuche"),
             show="headings",
             height=10,
         )
-        for col, title, width, anchor in [
-            ("belegung_id", "ID", 55, "w"),
-            ("modul", "Modul", 320, "w"),
-            ("ects", "ECTS", 55, "center"),
-            ("plan", "Plan", 55, "center"),
-            ("ist", "Ist", 55, "center"),
-            ("ist_datum", "Ist-Datum", 95, "center"),
-            ("ist_note", "Ist-Note", 70, "center"),
-            ("soll_note", "Soll-Note", 70, "center"),
-            ("versuche", "Vers.", 55, "center"),
+
+        # Reihenfolge/Benennung gemäß Vorgabe:
+        # ID; Modul; ECTS; Plan-Sem.; Ist-Sem.; Plan-Datum; Ist-Datum; Soll-Note; Ist-Note; Versuch
+        for col, title, width, anchor, stretch in [
+            ("belegung_id", "ID", 45, "w", False),
+            ("modul", "Modul", 220, "w", True),
+            ("ects", "ECTS", 45, "center", False),
+            ("plan_sem", "Plan-Sem.", 65, "center", False),
+            ("ist_sem", "Ist-Sem.", 65, "center", False),
+            ("soll_datum", "Plan-Datum", 85, "center", False),
+            ("ist_datum", "Ist-Datum", 85, "center", False),
+            ("soll_note", "Soll-Note", 60, "center", False),
+            ("ist_note", "Ist-Note", 60, "center", False),
+            ("versuche", "Versuch", 60, "center", False),
         ]:
             self.table.heading(col, text=title)
-            self.table.column(col, width=width, anchor=anchor)
+            self.table.column(col, width=width, anchor=anchor, stretch=stretch)
 
-        self.table.grid(row=row, column=0, columnspan=3, sticky="nsew")
-        left.rowconfigure(row, weight=1)
+        vsb = ttk.Scrollbar(table_frame, orient="vertical", command=self.table.yview)
+        hsb = ttk.Scrollbar(table_frame, orient="horizontal", command=self.table.xview)
+        self.table.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+
+        self.table.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+
         self.table.bind("<<TreeviewSelect>>", self._on_table_select)
 
         # ---------------- Right side: plots (Phase-2 layout) ----------------
@@ -211,12 +238,12 @@ class DashboardApp:
         nb_top.add(tab_note, text="Note pro Modul")
         nb_top.add(tab_avg, text="Ø-Note über Zeit")
 
-        self._fig_note = Figure(figsize=(4, 2.6), dpi=100)
+        self._fig_note = Figure(figsize=(4.3, 3.0), dpi=100)
         self._ax_note = self._fig_note.add_subplot(111)
         self._canvas_note = FigureCanvasTkAgg(self._fig_note, master=tab_note)
         self._canvas_note.get_tk_widget().grid(row=0, column=0, sticky="nsew")
 
-        self._fig_avg = Figure(figsize=(4, 2.6), dpi=100)
+        self._fig_avg = Figure(figsize=(4.3, 3.0), dpi=100)
         self._ax_avg = self._fig_avg.add_subplot(111)
         self._canvas_avg = FigureCanvasTkAgg(self._fig_avg, master=tab_avg)
         self._canvas_avg.get_tk_widget().grid(row=0, column=0, sticky="nsew")
@@ -232,12 +259,12 @@ class DashboardApp:
         nb_bottom.add(tab_delta, text="ΔTage pro Modul")
         nb_bottom.add(tab_ects, text="ECTS über Zeit")
 
-        self._fig_delta = Figure(figsize=(4, 2.6), dpi=100)
+        self._fig_delta = Figure(figsize=(4.3, 3.0), dpi=100)
         self._ax_delta = self._fig_delta.add_subplot(111)
         self._canvas_delta = FigureCanvasTkAgg(self._fig_delta, master=tab_delta)
         self._canvas_delta.get_tk_widget().grid(row=0, column=0, sticky="nsew")
 
-        self._fig_ects = Figure(figsize=(4, 2.6), dpi=100)
+        self._fig_ects = Figure(figsize=(4.3, 3.0), dpi=100)
         self._ax_ects = self._fig_ects.add_subplot(111)
         self._canvas_ects = FigureCanvasTkAgg(self._fig_ects, master=tab_ects)
         self._canvas_ects.get_tk_widget().grid(row=0, column=0, sticky="nsew")
@@ -280,6 +307,66 @@ class DashboardApp:
         self.modul_combo["values"] = titles
         if titles and (self.v_modul_title.get() not in titles):
             self.v_modul_title.set(titles[0])
+
+    
+    def _autosize_table_columns(self) -> None:
+        """
+        Passt die Spaltenbreiten der Tabelle auf ein sinnvolles Minimum an.
+
+        Kurz:
+            Die Breiten werden aus Überschrift + sichtbaren Zeilen grob abgeleitet,
+            damit Zahlen-/Datumsfelder nicht unnötig Platz verbrauchen.
+            Falls die Summe der Minimalbreiten nicht in die aktuelle Tabellenbreite passt,
+            wird zuerst die Modul-Spalte reduziert (die Inhalte stehen bei Auswahl auch im Formular).
+        """
+
+        try:
+            self.root.update_idletasks()
+            font = tkfont.nametofont("TkDefaultFont")
+            pad = 18  # etwas Luft links/rechts
+
+            floors = {
+                "belegung_id": 45,
+                "ects": 45,
+                "plan_sem": 65,
+                "ist_sem": 65,
+                "soll_datum": 85,
+                "ist_datum": 85,
+                "soll_note": 60,
+                "ist_note": 60,
+                "versuche": 60,
+                "modul": 160,
+            }
+
+            cols = list(self.table["columns"])
+            children = list(self.table.get_children())[:80]
+
+            minw: dict[str, int] = {}
+            for c in cols:
+                header = self.table.heading(c, "text")
+                w = font.measure(str(header)) + pad
+                for item in children:
+                    v = self.table.set(item, c)
+                    w = max(w, font.measure(str(v)) + pad)
+                w = max(w, floors.get(c, 40))
+                minw[c] = int(w)
+
+            avail = int(self.table.winfo_width() or 0)
+            if avail <= 1:
+                return
+
+            total = sum(minw.values())
+            if total > avail:
+                overflow = total - avail
+                minw["modul"] = max(floors["modul"], minw["modul"] - overflow)
+
+            for c in cols:
+                stretch = (c == "modul")
+                self.table.column(c, width=minw[c], minwidth=floors.get(c, 40), stretch=stretch)
+
+        except Exception:
+            # UI soll bei Problemen nicht "hart" abbrechen
+            pass
 
     def on_create_modul_dialog(self) -> None:
         """
@@ -489,8 +576,11 @@ class DashboardApp:
             self._ax_note.axhline(self.sg.soll_durchschnittsnote, linestyle="--", linewidth=1)
             self._ax_note.set_title("Note pro Modul (Ist / Soll)")
             self._ax_note.set_ylabel("Note")
+            self._ax_note.set_xlabel("Modul-ID")
             self._ax_note.set_xticks(xs)
             self._ax_note.set_xticklabels(short, rotation=45, ha="right")
+            self._ax_note.tick_params(axis="x", labelsize=8)
+            self._ax_note.tick_params(axis="y", labelsize=9)
             self._ax_note.set_ylim(1.0, 5.0)
             self._ax_note.invert_yaxis()
             self._ax_note.legend(loc="best")
@@ -509,10 +599,12 @@ class DashboardApp:
             self._ax_avg.axhline(self.sg.soll_durchschnittsnote, linestyle="--", linewidth=1)
             self._ax_avg.set_title("Ø-Note über Zeit")
             self._ax_avg.set_ylabel("Ø-Note")
+            self._ax_avg.set_xlabel("Datum")
             self._ax_avg.set_ylim(1.0, 5.0)
             self._ax_avg.invert_yaxis()
             self._ax_avg.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
-            self._ax_avg.tick_params(axis="x", rotation=30)
+            self._ax_avg.tick_params(axis="x", rotation=30, labelsize=8)
+            self._ax_avg.tick_params(axis="y", labelsize=9)
         self._fig_avg.tight_layout()
         self._canvas_avg.draw()
 
@@ -529,8 +621,11 @@ class DashboardApp:
             self._ax_delta.axhline(0, linestyle="--", linewidth=1)
             self._ax_delta.set_title("ΔTage pro Modul (Ist − Soll)")
             self._ax_delta.set_ylabel("Tage")
+            self._ax_delta.set_xlabel("Modul-ID")
             self._ax_delta.set_xticks(range(len(values)))
             self._ax_delta.set_xticklabels(short, rotation=45, ha="right")
+            self._ax_delta.tick_params(axis="x", labelsize=8)
+            self._ax_delta.tick_params(axis="y", labelsize=9)
         self._fig_delta.tight_layout()
         self._canvas_delta.draw()
 
@@ -545,8 +640,10 @@ class DashboardApp:
             self._ax_ects.plot(xs, ys, marker="o", linewidth=1.5)
             self._ax_ects.set_title("ECTS über Zeit")
             self._ax_ects.set_ylabel("kumulierte ECTS")
+            self._ax_ects.set_xlabel("Datum")
             self._ax_ects.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
-            self._ax_ects.tick_params(axis="x", rotation=30)
+            self._ax_ects.tick_params(axis="x", rotation=30, labelsize=8)
+            self._ax_ects.tick_params(axis="y", labelsize=9)
         self._fig_ects.tight_layout()
         self._canvas_ects.draw()
 
@@ -632,13 +729,16 @@ class DashboardApp:
                     r["ects"],
                     r["plan_semester_nr"],
                     r["ist_semester_nr"] or "",
+                    r["soll_bestanden_am"] or "",
                     r["ist_bestanden_am"] or "",
-                    r["ist_note"] if r["ist_note"] is not None else "",
                     r["soll_note"] if r["soll_note"] is not None else "",
+                    r["ist_note"] if r["ist_note"] is not None else "",
                     r["anzahl_versuche"],
                 ),
             )
 
+        # Spaltenbreiten werden nicht automatisch nachgezogen.
+        # Nutzer können die Breite manuell anpassen, ohne dass sie beim Refresh „zurückspringt“.
         self._safe_update_plots()
 
     def on_create(self) -> None:

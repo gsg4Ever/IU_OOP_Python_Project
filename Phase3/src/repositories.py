@@ -534,13 +534,17 @@ class ModulBelegungRepository:
     def list_latest(self, studiengang_id: int, limit: int = 200) -> list[Any]:
         """
         Listet die zuletzt angelegten Belegungen (für die Tabelle in der UI).
-        
+
         Parameter:
             studiengang_id (int): Kontext-Studiengang.
             limit (int): Maximale Anzahl zurückgegebener Zeilen.
-        
+
         Gibt zurück:
-            list[Any]: Row-Objekte mit Joins auf Modultitel/ECTS.
+            list[Any]: Row-Objekte (sqlite3.Row) mit u.a.:
+                `belegung_id`, `modul_id`, `modul_titel`, `ects`,
+                `plan_semester_nr`, `ist_semester_nr`,
+                `soll_bestanden_am`, `ist_bestanden_am`,
+                `soll_note`, `ist_note`, `anzahl_versuche`.
         """
 
         cursor = self.db.execute(
@@ -552,9 +556,10 @@ class ModulBelegungRepository:
               m.ects AS ects,
               mb.plan_semester_nr,
               mb.ist_semester_nr,
+              mb.soll_bestanden_am,
               mb.ist_bestanden_am,
-              mb.ist_note,
               mb.soll_note,
+              mb.ist_note,
               mb.anzahl_versuche
             FROM modul_belegung mb
             JOIN modul m ON m.modul_id = mb.modul_id
@@ -655,19 +660,22 @@ class ModulBelegungRepository:
     def plot_latest_per_module(self, studiengang_id: int) -> list[Any]:
         """
         Liefert den jeweils neuesten Datensatz je Modul (für Diagramme).
-        
+
         Kurz:
             Für jedes Modul wird die letzte Belegung (höchste `belegung_id`) ermittelt und
             um Stammdaten (Titel/ECTS) ergänzt. Damit können Soll-/Ist-Noten sowie Zeitabweichungen
             pro Modul geplottet werden.
-        
+
         Parameter:
             studiengang_id (int): Kontext-Studiengang.
-        
+
         Gibt zurück:
-            list[Any]: Row-Objekte (sqlite3.Row) mit Feldern wie `titel`, `soll_note`, `ist_note`,
-            `soll_bestanden_am`, `ist_bestanden_am` und `delta_days`.
-        
+            list[Any]: Row-Objekte (sqlite3.Row) mit Feldern wie
+                `modul_id`, `titel`, `ects`,
+                `soll_note`, `ist_note`,
+                `soll_bestanden_am`, `ist_bestanden_am`,
+                `delta_days` (Ist minus Soll in Tagen).
+
         Hinweis:
             Implementierung ist SQLite-kompatibel (ohne Window Functions).
         """
